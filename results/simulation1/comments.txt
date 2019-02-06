@@ -1,0 +1,31 @@
+parameters of the simulation : commit 4d78c68c78e82. 
+	- N_SIM = 10000
+	- N_DAYS = 200 #+ 200
+	- INDEX_DAY_INVESTIGATION = 0  
+	- algo = "qf"  # quizflip
+
+Comments :
+	- The unexpected up and down on the true retention rate is due to the fact that the simulation has an end. There are notable differences (that hard to normalize) on the retention rate, but also on the workload, between simulations where the review comes just before the end date of the simulation. And the ones just after the simulation. I did not find a proper way to handle this. 
+	- Currently : 
+		- the retention rate is computed by taking the forgetting curve to the next review even if it crosses the end of the investigation date.
+		- the the relative workload is increased by the relative closeness of the next review after the end of the investigation date.
+	- So, it's better to interpolate 
+		- retention_ratevsfactor figure as a straight line, 
+		- interpolate workload_versus factor as three straight lines, same as factor versus efficiency
+
+KEY RESULTS :
+	- Increasing too much the multiplicative factor results in less retention rate...but also paradoxally in more work as failed cards are reviewed more often. 
+
+The specific factor 3.66 is a very important point. It's the most efficient factor (retention/workload).
+	- It provides good performances susccess rate around 80% (when a card is shown) and a retention rate (if a card was shown at any moment around 90%). 
+	- With a mean of 8.0 reviews during the 200 days of investigation. Because of the "workload plateau" from 3.5 to 6), it's very close from the factor that provides the least work (the simulation giving the least work yields 8.14 reviews as a mean).
+
+LIMITS :
+	- Multiple assumptions have been made :
+		- uncertainties on probability for success on failed cards
+		- cards have a medium difficulty
+		- students review their cards at the due date
+
+CONCLUSIONS :
+	- If Anki is correct to treat failed cards as new ones, then one must be careful to not increase the factor too much
+	- Raise the factor from 2.5 to 3. to provide more efficiency to the user. 3 must be preferred than 3.5 or 3.6 because it's more acceptable to have more work for a better retention rate, than to have a similar amount of work for a lower one (cf the workload plateau).

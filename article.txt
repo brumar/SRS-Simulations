@@ -1,0 +1,127 @@
+# Rationale for this simulation
+
+Anki allows the user to change a crucial parameter in the spaced repetition algorithm.
+As you may know, intervals (delay between revisions) can get modified by an Interval Modifier (IM).
+
+The Interval Modifier and the Retention Rate have a precise mathematical relation.
+This relation is often used by Anki users to adjust their retention rate.
+
+The relation between the quantity of work and these two variables is less clear. One can be tempted to try large IM's in order to have less work, but as failed cards got an (almost) hard reset, this strategy may or may not backfire by asking the user even more work.
+
+Efficiency is a concept that has its importance in this context. As a user who has not a limited set of cards to learn, I may want to optimize my ratio overall retention rate/work. If I spend less time reviewing, I can spend more on learning new things. Work is counted only as the number of reviews, while knowledge is the product on how many cards I have in the system to how much I know them. I consider that having 10 cards known with an overall retention of 60% worth 30 cards with an overall retention of 20%.
+
+Are there optimal Interval Modifiers that optimize Efficiency?
+
+# Glossary
+
+**Workload** : Average number of reviews of a single card during the simulation.
+
+**Success Rate** : Probability of answering "yes" at card. Supposed to be constant during a single simulation. I avoided the term retention rate to prevent confusion with "overall retention rate" defined below.
+
+**Overall Retention Rate** : Average success rate if the user was tested at any random time during the simulation.
+
+**Efficiency** : Overall Retention rate / Workload
+
+**factor** : The constant responsible for the spacing (Interval2 = factor * Interval1). Supposed to be constant during a single simulation.
+
+**IM** : Interval Modifier. The ratio between two factors.
+
+# Key results
+
+Under default parameters :
+
+- SM2 is pretty inefficient. According to its embarked model, it clearly values quality over efficiency (see footnote).
+- With optimized factors, the default SM2 algorithm got an efficiency improvement around +66%. Costing -5pts in overall retention traded against 50% less work.
+- This IM is between 2 and 3. It provides a Success Rate generally between 70% and 80%. This seems to be in agreement with Wosniak own simulations (cf footnotes).
+- Large IMs (> 3.5) provides both more work AND less retention than optimal IMs. It's then more damaging to shift optimized IM to the right (equivalent workload for less retention) than to the left.
+- The efficiency optimum is very close to provide the same amount of work than the factor givin this optimum (i.e the factor where you have to review your card the least possible)
+- Changing the period of investigation does not change the result much (IM tends to grow but is still between 2 and 3).
+
+These results stands for a retention rate at test around 0.85.
+
+- Optimal IMs are very sensitive to the user default retention rate. If higher than 0.9 optimal IM can be higher than 3, if lower than 0.85 it can be lower than 2.
+For this reason, a plot normal retention rate Vs optimal IM is provided. Coarse results would be :
+
+- success rate -> IM advised
+- 70-80 -> 150%
+- 80-90 -> 250%
+- 90-95 -> 400%
+- 95-98 -> 500%
+
+
+This result is fairly counter-intuitive from a cognitive perspective.
+If you think the memory model of SM2 is right and you want to optimize your efficiency, then you have some interesting recomendations there.
+
+To me, the fourth point is not an happy hazard, it's the side-effect of an algorithm too harsh on failed cards.
+But what if failed cards do not deserve a full reset ?
+Another simulation is provided with an alternative model where failed cards are less severly punished.
+
+To my surprise (dismay), results are surprisingly not very much different !
+Optimal IM is found to be just a little bit higher.
+
+My safest bet, for the user who want to optimize its long run efficiency, is to target a retention rate around 80%.
+This would represent large efficiency gain over classical SM2 and still be conservative enough to avoid the problem #3.
+I am inline with Wosniak approach :
+"As you perhaps know, SuperMemo disallows of the forgetting index above 20%. This comes from the fact that you should aim at achieving high speed of learning combined with high retention of the learned material. Setting the forgetting index above 20% would be like giving up SuperMemo altogether and coming back to remembering only that what is easy to remember. In highly interlinked material where new knowledge depends on the previously acquired knowledge, high forgetting rate can even be more harmful.
+Nevertheless, if you want to maximize the speed of learning with little control over what actually stays in your memory, set the forgetting index to 20%"
+
+# Behind the hood
+
+## How the simulation works
+
+The idea is to follow the path of a single card during 2000 days.
+We roll the random module to decide whether or not the card is failed and we schedule this card accordingly (Intervals got multiplied by factor).
+We run 10 000 simulations for each factor. Factors are chosen as fractions (2.666, 2.75 etc...) in order to have meaningful distinctions (intervals are rounded).
+For each simulation we count :
+- How many times the card has been reviewed
+- How well this card has been known over time (with a subtlety, integrals are computed to answer to the question
+"If I was interrogated at any time during the investigation period, how would have I succeeded ?".).
+That's why I used the term "overall retention rate" for less ambiguity.
+
+As the success rate of the user has a large impact on the result of the simulations, we ran this whole set of simulations for a range of success rate between 0.70 and 0.98.
+
+
+## Assumptions and simplifications
+
+SM2 algorithm schedule cards so that they are at X% chance to be succeeded (X depends on the user and his cards so this is a parameter of the model) 
+Failed cards are reviewed ASAP then the day after. After that, they retrieve their normal flow.
+The first steps are : 1day, factor days, factor*factor ...etc...
+If the interval is a float, its rounded so that it's a number of days
+No grading (easy, good etc..). The multiplicative factor stay constant (like only good/fail).
+No randomness was added in the dates related to the scheduling or the reviewing of the cards.
+All reviews represent the same unity of work (learning, relearning included).
+
+Many of these factors can be changed. If you think that one must be changed or passed as a parameter of the model, tell me, or fork me and PR me. 
+The code here is not perfect, you may be put off by the big-fat-loop of the simulations. Sorry about that.
+
+## The problem of the cutoff
+
+Every simulation has an end. In the context of spaced repetition, choosing the end has consequences.
+Let say I put a static limit at 200 days. On the opposite, if the card is planed just before, we have just the opposite effect. I identified two ways to counteract this limit. If the card is reviewed just before the 200 days cutoff, the simulation got more workload for not a big increase in retention. After many trial and errors (see footnote 2). I opted in for a random cutoff following an exponential distribution pararametrized so that the average length of a simulation is one year.
+
+
+## Footnotes
+1. This result is not new and noted in Piotr Wosniak websites. However he thought that optimization could be done by setting an "efficient" forgetting index. This simulation shows that optimal factors depends largely on the current forgetting index of the user.
+
+https://www.supermemo.com/help/fi.htm
+"It is difficult to determine exactly what forgetting index brings the highest acquisition rate.
+Simulation experiments have consistently pointed to the value of 25-30%"
+
+2.The first is to apply bonus or malus on workload or retention rate depending on how far the next review is planned after the cutoff.
+For example adding a fraction of review depending on how far the next review is planned provockes a negative effect.
+The second is too have a random cutoff.
+The first did not solve my problem very much (curves were malformed, and my bonus/malus system were ad'hoc and arguable).
+
+Random cutoff, on the opposite ended up working quite well (with a lot of pain involved though, see the footnote) but that recquires to simulate more to limit the extra variance added the simulation.
+After few trials, I picked a radical 'ultra random cutoff' where a single simulation is between 2 months and 5 years (uniform random).
+That smoothed well the curve (with still a noticable discrepancy though).
+Even with this very large smoothing, sweet spots for factors were still visible and perfectly predictible.
+This is problem. At these specific sweetspots were lying the first version of our optimized factors.
+That would have saved me some cpu cycles to solve a polynomial expression than running thousands of simulations.
+You can check the deprecated notebook "before gauss" inside the repository to see how nasty this effect was.
+
+I changed the uniform random for a gaussian random hoping to get more smoothing, which apparently made things worse.
+At this point, I almost raged quit this simulation problem.
+Then I change to an exponential distribution. And FINAL-FUCKING-LY.
+After thinking about this, I believe this is a good model.
+Each day passing, you have the same probability to get rid of your card.
