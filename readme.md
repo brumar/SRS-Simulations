@@ -19,6 +19,9 @@ or, to test for a range of difficulty :
 
 `python3.7 workload_simulation.py --runopti --nsimsbyfactor 100 --outputdir ./output`
 
+or, to print in the console the result of a simulation:
+
+`python3.7 workload_simulation.py --analyse --input data.pkl`
 
 `data.pkl` is the filename you chooe where the results of the simulation will be stored. You can load safely this kind of file only in your own environment.
 

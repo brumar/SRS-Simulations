@@ -1,4 +1,6 @@
-# Rationale for this simulation
+# SRS Simulations
+
+## Rationale for this simulation
 
 Anki allows the user to change a crucial parameter in the spaced repetition algorithm.
 As you may know, intervals (delay between revisions) can get modified by an Interval Modifier (IM).
@@ -12,7 +14,7 @@ Efficiency is a concept that has its importance in this context. As a user who h
 
 Are there optimal Interval Modifiers that optimize Efficiency?
 
-# Glossary
+## Glossary
 
 **Workload** : Average number of reviews of a single card during the simulation.
 
@@ -26,11 +28,11 @@ Are there optimal Interval Modifiers that optimize Efficiency?
 
 **IM** : Interval Modifier. The ratio between two factors. By default, this relates to SM2 default factor(2.5). IM = newfactor/2.5
 
-**period of investigation** : Average lenght of a simulation (the number of days the card history is tracked).
+**Period of investigation** : Average length of a simulation (the number of days the card history is tracked).
 
 **Better** : Better efficiency. In the rest of the article, I won't precise that we are in the context of efficiency searching.
 
-# Key results
+## Key results
 
 Under default parameters :
 
@@ -43,10 +45,21 @@ Under default parameters :
 - The efficiency optimum is very close to provide the same amount of work than the factor givin this optimum (i.e the factor where you have to review your card the least possible).
 - Changing the period of investigation does not really change the results.
 
+Few plots:
 
-# Behind the hood
+- [workload for 70% success rate](./images/70_l.png)  
+- [retention for 70% success rate](./images/70_ret.png)  
+- [efficiency for 70% success_rate](./images/70_ef.png)  
+- [workload for 85% success rate](./images/85_l.png)  
+- [retention for 85% success rate](./images/85_ret.png)  
+- [efficiency for 85% success rate](./images/85_ef.png)
 
-## How the simulation works
+The most useful one :
+- [optimized factors Vs success rate](./images/all.png)
+
+## Behind the hood
+
+### How the simulation works
 
 The idea is to follow the path of a single card during 2000 days.
 We roll the random module to decide whether or not the card is failed and we schedule this card accordingly (Intervals got multiplied by factor).
@@ -60,7 +73,7 @@ That's why I used the term "overall retention rate" for less ambiguity.
 As the success rate of the user has a large impact on the result of the simulations, we ran this whole set of simulations for a range of success rate between 0.70 and 0.98.
 
 
-## Assumptions and simplifications
+### Assumptions and simplifications
 
 
 SM2 algorithm schedule cards so that they are at X% chance to be succeeded (X depends on the user and his cards so this is a parameter of the model) 
@@ -74,7 +87,7 @@ All reviews represent the same unity of work (learning, relearning included).
 Many of these factors can be changed. If you think that one must be changed or passed as a parameter of the model, tell me, or fork me and PR me. 
 The code here is not perfect, you may be put off by the big-fat-loop of the simulations. Sorry about that.
 
-## The problem of the cutoff
+### The problem of the cutoff
 
 Every simulation has an end. In the context of spaced repetition, choosing the end has consequences.
 Let say I put a static limit at 200 days. On the opposite, if the card is planed just before, we have just the opposite effect. I identified two ways to counteract this limit. If the card is reviewed just before the 200 days cutoff, the simulation got more workload for not a big increase in retention. After many trial and errors (see footnote 2). I opted in for a random cutoff following an exponential distribution pararametrized so that the average length of a simulation is one year.
@@ -94,7 +107,9 @@ Optimal IMs are found to be higher than the original study compared to SM2 (also
 - optimized IM at 230% for success rate for 70% difficulty -8pt retention, -25% workload.
 - optimized IM at 370% for success rate for 90% difficulty -7pt retention, -40% workload.
 - optimized IM at 580% for success rate for 95% difficulty -6pt retention, -48% workload.
-The shape of the workload happens to be fixed. An user is still able to trade workload against retention (but at an higher and higher cost once he passed through the optimized IM). I don't think the niceness of the curves are a strong argument in favor of this memory model and strategy. This would be much better to have empirical data on this subject.
+The shape of the workload happens to be "fixed" ([70%](images/workload_70_after_partial_reset.png), [95%](images/workload_95_after_partial_reset.png))
+
+An user is still able to trade workload against retention (but at an higher and higher cost once he passed through the optimized IM). I don't think the niceness of the curves are a strong argument in favor of this memory model and strategy. This would be much better to have empirical data on this subject.
 
 
 ## Footnotes
@@ -110,15 +125,34 @@ The second is too have a random cutoff.
 The first did not solve my problem very much (curves were malformed, and my bonus/malus system were ad'hoc and arguable).
 
 Random cutoff, on the opposite ended up working quite well (with a lot of pain involved though, see the footnote) but that recquires to simulate more to limit the extra variance added the simulation.
-After few trials, I picked a radical 'ultra random cutoff' where a single simulation is between 2 months and 5 years (uniform random).
+After few trials, I picked a radical 'ultra random cutoff' where a single simulation is between 2 months and 4 years (uniform random).
 That smoothed well the curve (with still a noticable discrepancy though).
 Even with this very large smoothing, sweet spots for factors were still visible and perfectly predictible.
 This is problem. At these specific sweetspots were lying the first version of our optimized factors.
 That would have saved me some cpu cycles to solve a polynomial expression than running thousands of simulations.
-You can check the deprecated notebook "before gauss" inside the repository to see how nasty this effect was.
 
-I changed the uniform random for a gaussian random hoping to get more smoothing, which apparently made things worse.
-At this point, I almost raged quit this simulation problem.
-Then I change to an exponential distribution. And FINAL-FUCKING-LY.
+Few plots :
+
+- [retention](images/midsmooth_ret.png)
+- [work](images/midsmooth_work.png)
+- [efficiency](images/midsmooth_eff.png)
+
+Note that without a random cutoff the curves were even uglier.
+
+Black lines are the results of the solutions of the following equations :
+
+- x^2 + x + 1 = 30 * 12 * 4
+- x^3 + x^2 + x + 1 = 30 * 12 * 4
+- x^4 + x^3 + x^2 + 1 = 30 * 12 * 4
+
+These were the exact factor allowing the simulation to be absolutely sure to leave in (3, 4 or 5 steps).
+Increasing the factor after these spots brings no benefit because the simulation won't leave in less steps the investigation period, but get more chances to get a card failed.
+
+I changed the uniform random for a gaussian random (normal distribution) hoping to get more smoothing, which apparently made things worse.
+At this point, I almost raged quit this simulation project.
+Then I changed to an exponential distribution. And FINAL-FUCKING-LY, it gave something smooth.
+
+
+
 After thinking about this, I believe this is a good model.
 Each day passing, you have the same probability to get rid of your card.

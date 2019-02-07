@@ -8,7 +8,7 @@ import forgetting_curve as fc
 from collections import namedtuple
 import argparse
 import settings
-from settings import INDEX_DAY_INVESTIGATION, RANDOM_CUTOFF, int_or_round_floating_itv, ADJUSTMENT_CUTOFF
+from settings import INDEX_DAY_INVESTIGATION, UNIFORM_CUTOFF, int_or_round_floating_itv, ADJUSTMENT_CUTOFF
 
 # todo: a factor of 2.5 is considered to provide 85% retention rate, this should be changed as parameters
 # 200 days =>
@@ -34,7 +34,7 @@ def one_or_zero_if_investigation(nb_days):
         return 0
 
 
-def sim(pb, nsims, onfail, ndays, difficulty=settings.difficulty, factor=None):
+def sim(pb, nsims, onfail, ndays=365, difficulty=settings.difficulty, factor=None):
     """simulate N_SIM times, the journey of a single card during N_DAYS, where the algorithm is set up
     such as the probablity of success when a card is shown is pb.
     Extracts two mean statistics : the true retention rate and the number of times the card was presented to the user.
@@ -50,10 +50,10 @@ def sim(pb, nsims, onfail, ndays, difficulty=settings.difficulty, factor=None):
         if settings.ULTRA_RANDOM_CUTOFF:
             #ndays_sim = random.randint(30*2, 30*12*4)
             while True:
-                ndays_sim = int(random.expovariate(1/365))
+                ndays_sim = int(random.expovariate(1/ndays))
                 if ndays_sim > 2:
                     break
-        elif RANDOM_CUTOFF:
+        elif UNIFORM_CUTOFF:
             ndays_sim = random.randint(int(ndays * 50 / 100), int(ndays * 150 / 100))
         else:
             ndays_sim = ndays
@@ -176,105 +176,36 @@ def print_alert_incorrect_spots(list_of_factor, ndays):
             #print(factor, itv, ndays)
             if ndays*95/100 < index_day < ndays*105/100:
                 print("the simulation may be incorrect on the viscinity of this factor " + str(factor))
-    
-    
 
 
-if __name__ == "__main__":
-    my_parser = argparse.ArgumentParser(description="run or analyse simulation of spaced repetition algorithm")
-    my_parser.add_argument("--run", action="store_true")
-    my_parser.add_argument("--runopti", action="store_true")
-    my_parser.add_argument("--input", nargs="?", type=str)
-    my_parser.add_argument("--onfail", nargs="?", type=str, default="reset")
-    my_parser.add_argument("--output", nargs="?", type=str)
-    my_parser.add_argument("--outputdir", nargs="?", type=str)
-    my_parser.add_argument("--nsimsbyfactor", nargs="?", type=int, default=3000)
-    my_parser.add_argument("--ndays", nargs="?", type=int, default=200)
-    my_parser.add_argument("--difficulty", nargs="?", type=float, default=settings.difficulty)
-    #my_parser.add_argument("--ndays_start", nargs="?", type=int, default=6*30)
-    #my_parser.add_argument("--ndays_end", nargs="?", type=int, default=30*12*6)
-    args = my_parser.parse_args()
+def generate_list_of_factors():
+    # trick to get this kind of factor 1.0, 1.1, 1.2, 1.25, 1.3, 1.3333333333333333
+    # Why ? These factors produce sensible enough different simulations because intervals are integers
+    # Intervals get rounded if they become float, so for the sake of the simulation, let's pick factors that
+    # would result in neat intervals
     
-    if args.runopti:
-        if args.outputdir:
-            os.mkdir(args.outputdir)
-        list_of_factors = [i / 120 for i in range(3 * 60, 10 * 200) if (i % 30 == 0) or (i % 40 == 0) or (i % 12 == 0)]
-        #print_alert_incorrect_spots(list_of_factors, args.ndays)
-        step = 0.5
-        end = 98
-        success_rate = 69.5
-        while success_rate <= end:
-            success_rate += step
-            total_output = []
-            difficulty = success_rate/100
-            # print_alert_incorrect_spots(list_of_factors, args.ndays)
-            focus_output = []
-            focus_output_too_high = []
-            focus_output_too_low = []
-            for factor in list_of_factors:
-                pbt = fc.get_pb_success_from_interval_modifier(factor / 2.5, difficulty)
-                l = sim(pbt, nsims=args.nsimsbyfactor, onfail="reset", ndays=1, difficulty=difficulty, factor=factor)
-                quotient = l[0] / l[1]
-                row = SimulationResult(pbt, l[0], l[1], quotient, factor)
-                total_output.append(row)
-            best_productivity = max(total_output, key=itemgetter(3))
-            print(success_rate, *best_productivity)
-            if args.outputdir:
-                with open(args.outputdir+"/"+str(success_rate)+".pkl", "wb") as picklefile:
-                    pickle.dump(total_output, picklefile)
-            
-    
-    if args.run:
-        vals_to_print = []
-        total_output = []
-        # trick to get this kind of factor 1.0, 1.1, 1.2, 1.25, 1.3, 1.3333333333333333
-        # Why ? These factors produce sensible enough different simulations because intervals are integers 
-        # Intervals get rounded if they become float, so for the sake of the simulation, let's pick factors that
-        # would result in neat intervals
-        
-        # How ? : take floats that would be close to integers when multiplied by common integers
-        list_of_factors = [i / 120 for i in range(3 * 60, 10 * 200) if (i % 30 == 0) or (i % 40 == 0) or (i % 12 == 0)]
-        print_alert_incorrect_spots(list_of_factors, args.ndays)
-        focus_output = []
-        focus_output_too_high = []
-        focus_output_too_low = []
+    # How ? : take the results of fractions.
+    return [i / 120 for i in range(3 * 60, 10 * 200) if (i % 30 == 0) or (i % 40 == 0) or (i % 12 == 0)]
 
-        for factor in list_of_factors:
-            pbt = fc.get_pb_success_from_interval_modifier(factor / 2.5)
-            l = sim(pbt, nsims=args.nsimsbyfactor, onfail=args.onfail, ndays=args.ndays,
-                    difficulty=args.difficulty, factor=factor)
-            quotient = l[0] / l[1]
-            row = SimulationResult(pbt, l[0], l[1], quotient, factor)
-            total_output.append(row)
-        if args.output:
-            with open(args.outputdir, "wb") as picklefile:
-                pickle.dump(total_output, picklefile)
-    else:
-        try:
-            with open(args.input, "rb") as picklefile:
-                total_output = pickle.load(picklefile)
-        except:
-            print("problem with input file. Either run a simulation with --run or give a file filepath")
-            raise
-    
-    
-    print("only good points taken")
-    new_output_cleaned = remove_irrelevant_options(total_output)
-    for output in new_output_cleaned:
-        print_couple(output[2], output[1])
-    
-    print(" ")
-    print("factors used")
-    for output in new_output_cleaned:
-        print(fc.factor_interv(output[0]), output)
-    print("factor value versus retention rate")
-    
+
+def build_sim(nsimsbyfactor, onfail, ndays, difficulty, factor):
+    pbt = fc.get_pb_success_from_interval_modifier(factor / 2.5, difficulty)
+    l = sim(pbt, nsims=nsimsbyfactor, onfail=onfail, ndays=ndays, difficulty=difficulty, factor=factor)
+    quotient = l[0] / l[1]
+    return SimulationResult(pbt, l[0], l[1], quotient, factor)
+
+
+def analyse(input):
+    try:
+        with open(input, "rb") as picklefile:
+            total_output = pickle.load(picklefile)
+    except:
+        raise Exception("problem with input file. Either run a simulation with --run or give a file filepath")
     print(" ")
     print("factor value versus retention rate")
     print("----------")
     for output in total_output:
         print_couple(output.factor, output.r_rate)
-    
     print(" ")
     print("factor value versus efficiency")
     print("----------")
@@ -285,15 +216,12 @@ if __name__ == "__main__":
     print("----------")
     for output in total_output:
         print_couple(output.factor, output.w_load)
-    
-    
     print("outputs : recall proba, real retention rate, workload, retention/workload")
     best_productivity = max(total_output, key=itemgetter(3))
     print("best_productivity")
     print(best_productivity)
     print("factor used")
     print(best_productivity.factor)
-
     least_work = min(total_output, key=itemgetter(2))
     print("least work")
     print(least_work)
@@ -304,3 +232,66 @@ if __name__ == "__main__":
             print("workload on default algorithm")
             print(output)
             break
+
+
+if __name__ == "__main__":
+    my_parser = argparse.ArgumentParser(description="run or analyse simulation of spaced repetition algorithm")
+    my_parser.add_argument("--run", action="store_true")
+    my_parser.add_argument("--runopti", action="store_true")
+    my_parser.add_argument("--analyse", action="store_true")
+    my_parser.add_argument("--input", nargs="?", type=str)
+    my_parser.add_argument("--onfail", nargs="?", type=str, default="reset")
+    my_parser.add_argument("--output", nargs="?", type=str)
+    my_parser.add_argument("--outputdir", nargs="?", type=str)
+    my_parser.add_argument("--nsimsbyfactor", nargs="?", type=int, default=settings.nsimsbyfactor)
+    my_parser.add_argument("--verbose", action="store_true")
+    my_parser.add_argument("--ndays", nargs="?", type=int, default=settings.ndays)
+    my_parser.add_argument("--difficulty", nargs="?", type=float, default=settings.difficulty)
+    args = my_parser.parse_args()
+    
+    nsimsbyfactor = args.nsimsbyfactor
+    onfail = args.onfail
+    ndays = args.ndays
+    verbose = args.verbose
+    
+    if args.runopti:
+        if args.outputdir:
+            os.mkdir(args.outputdir)
+        else:
+            raise ValueError("you need to specify output directory (--outputdir)")
+        list_of_factors = generate_list_of_factors()
+        step = 0.5
+        end = 98
+        success_rate = 69.5
+        while success_rate <= end:
+            success_rate += step
+            difficulty = success_rate/100
+            total_output = []
+            for factor in list_of_factors:
+                total_output.append(build_sim(nsimsbyfactor, onfail, ndays, difficulty, factor))
+            if verbose:
+                best_productivity = max(total_output, key=itemgetter(3))
+                print(success_rate, *best_productivity)
+            with open(args.outputdir+"/"+str(success_rate)+".pkl", "wb") as picklefile:
+                pickle.dump(total_output, picklefile)
+        exit(0)
+            
+    if args.run:
+        vals_to_print = []
+        total_output = []
+        list_of_factors = generate_list_of_factors()
+        #print_alert_incorrect_spots(list_of_factors, args.ndays)
+        focus_output = []
+        difficulty = args.difficulty
+        for factor in list_of_factors:
+            total_output.append(build_sim(nsimsbyfactor, onfail, ndays, difficulty, factor))
+        if args.output:
+            with open(args.output, "wb") as picklefile:
+                pickle.dump(total_output, picklefile)
+        if args.verbose:
+            analyse(args.output)
+        exit(0)
+
+    if args.analyse:
+        input = args.input
+        analyse(input)
