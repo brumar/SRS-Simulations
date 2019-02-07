@@ -26,27 +26,24 @@ Are there optimal Interval Modifiers that optimize Efficiency?
 
 **IM** : Interval Modifier. The ratio between two factors.
 
+**period of investigation** : Average lenght of a simulation (the number of days the card history is tracked).
+
 # Key results
 
 Under default parameters :
 
-- SM2 is pretty inefficient. According to its embarked model, it clearly values quality over efficiency (see footnote).
-- With optimized factors, the default SM2 algorithm got an efficiency improvement around +66%. Costing -5pts in overall retention traded against 50% less work.
-- This IM is between 2 and 3. It provides a Success Rate generally between 70% and 80%. This seems to be in agreement with Wosniak own simulations (cf footnotes).
-- Large IMs (> 3.5) provides both more work AND less retention than optimal IMs. It's then more damaging to shift optimized IM to the right (equivalent workload for less retention) than to the left.
-- The efficiency optimum is very close to provide the same amount of work than the factor givin this optimum (i.e the factor where you have to review your card the least possible)
-- Changing the period of investigation does not change the result much (IM tends to grow but is still between 2 and 3).
+- SM2 is pretty inefficient. According to its own theory, it clearly values quality over efficiency (see footnote).
+- Optimal IM are very sensitive to the user default retention rate. Still, an IM of 140% has always a better efficiency than the default algorithm. If you have a success rate larger than 80%, it can be raised as follow (a more complete plot is provided):
+- For the "default" 90% success rate, optimized IM is suggested at 270%. Compared to the default IM, it costs -5pts in overall retention traded against 33% less work.
+- For a 95% success rate, the optimized IM at 430% cost -4.6 points in overall retention for a decreased workload of 44%.
+- Workload have an U shape while retention is (almost) a straight line. This means that large IMs can provides both more work AND less retention than optimal IMs. It's then more damaging to shift optimized IM to the right (equivalent workload for less retention) than to the left.
+- The efficiency optimum is very close to provide the same amount of work than the factor givin this optimum (i.e the factor where you have to review your card the least possible).
+- Changing the period of investigation does not change the result much.
 
 These results stands for a retention rate at test around 0.85.
 
 - Optimal IMs are very sensitive to the user default retention rate. If higher than 0.9 optimal IM can be higher than 3, if lower than 0.85 it can be lower than 2.
 For this reason, a plot normal retention rate Vs optimal IM is provided. Coarse results would be :
-
-- success rate -> IM advised
-- 70-80 -> 150%
-- 80-90 -> 250%
-- 90-95 -> 400%
-- 95-98 -> 500%
 
 
 This result is fairly counter-intuitive from a cognitive perspective.
@@ -83,6 +80,7 @@ As the success rate of the user has a large impact on the result of the simulati
 
 ## Assumptions and simplifications
 
+
 SM2 algorithm schedule cards so that they are at X% chance to be succeeded (X depends on the user and his cards so this is a parameter of the model) 
 Failed cards are reviewed ASAP then the day after. After that, they retrieve their normal flow.
 The first steps are : 1day, factor days, factor*factor ...etc...
@@ -101,7 +99,7 @@ Let say I put a static limit at 200 days. On the opposite, if the card is planed
 
 
 ## Footnotes
-1. This result is not new and noted in Piotr Wosniak websites. However he thought that optimization could be done by setting an "efficient" forgetting index. This simulation shows that optimal factors depends largely on the current forgetting index of the user.
+1. This result is not new and noted in Piotr Wosniak websites. However he thought that optimization could be done by setting an "efficient" forgetting index. This simulation shows that optimal factors depends largely on the current forgetting index of the user. And that optimized IM are associated with new F.I that vary much (between .90 and .58).
 
 https://www.supermemo.com/help/fi.htm
 "It is difficult to determine exactly what forgetting index brings the highest acquisition rate.
