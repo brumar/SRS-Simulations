@@ -92,8 +92,8 @@ def sim(pb, nsims, onfail, ndays, difficulty=settings.difficulty, factor=None):
                         current_pb_success = settings.difficulty
                         interval_thresholded = normalize_with_threshold(date_due, effective_interval, ndays=ndays_sim)
                     elif onfail == "stable":
-                        effective_interval = current_interv
-                        date_due = date_due + current_interv
+                        effective_interval = int_or_round_floating_itv(max(current_interv/math.sqrt(factor), 1))
+                        date_due = date_due + effective_interval
                         interval_thresholded = normalize_with_threshold(date_due, current_interv, ndays=ndays_sim)
                         current_pb_success = settings.difficulty
                     else:

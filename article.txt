@@ -18,15 +18,17 @@ Are there optimal Interval Modifiers that optimize Efficiency?
 
 **Success Rate** : Probability of answering "yes" at card. Supposed to be constant during a single simulation. I avoided the term retention rate to prevent confusion with "overall retention rate" defined below.
 
-**Overall Retention Rate** : Average success rate if the user was tested at any random time during the simulation.
+**Overall Retention Rate** : Average success rate if the user was tested at **any random moment** during the simulation. I reger
 
 **Efficiency** : Overall Retention rate / Workload
 
 **factor** : The constant responsible for the spacing (Interval2 = factor * Interval1). Supposed to be constant during a single simulation.
 
-**IM** : Interval Modifier. The ratio between two factors.
+**IM** : Interval Modifier. The ratio between two factors. By default, this relates to SM2 default factor(2.5). IM = newfactor/2.5
 
 **period of investigation** : Average lenght of a simulation (the number of days the card history is tracked).
+
+**Better** : Better efficiency. In the rest of the article, I won't precise that we are in the context of efficiency searching.
 
 # Key results
 
@@ -34,33 +36,13 @@ Under default parameters :
 
 - SM2 is pretty inefficient. According to its own theory, it clearly values quality over efficiency (see footnote).
 - Optimal IM are very sensitive to the user default retention rate. Still, an IM of 140% has always a better efficiency than the default algorithm. If you have a success rate larger than 80%, it can be raised as follow (a more complete plot is provided):
+- 70% success -> IM 140%, -5pt retention, -18% workload
 - For the "default" 90% success rate, optimized IM is suggested at 270%. Compared to the default IM, it costs -5pts in overall retention traded against 33% less work.
 - For a 95% success rate, the optimized IM at 430% cost -4.6 points in overall retention for a decreased workload of 44%.
 - Workload have an U shape while retention is (almost) a straight line. This means that large IMs can provides both more work AND less retention than optimal IMs. It's then more damaging to shift optimized IM to the right (equivalent workload for less retention) than to the left.
 - The efficiency optimum is very close to provide the same amount of work than the factor givin this optimum (i.e the factor where you have to review your card the least possible).
-- Changing the period of investigation does not change the result much.
+- Changing the period of investigation does not really change the results.
 
-These results stands for a retention rate at test around 0.85.
-
-- Optimal IMs are very sensitive to the user default retention rate. If higher than 0.9 optimal IM can be higher than 3, if lower than 0.85 it can be lower than 2.
-For this reason, a plot normal retention rate Vs optimal IM is provided. Coarse results would be :
-
-
-This result is fairly counter-intuitive from a cognitive perspective.
-If you think the memory model of SM2 is right and you want to optimize your efficiency, then you have some interesting recomendations there.
-
-To me, the fourth point is not an happy hazard, it's the side-effect of an algorithm too harsh on failed cards.
-But what if failed cards do not deserve a full reset ?
-Another simulation is provided with an alternative model where failed cards are less severly punished.
-
-To my surprise (dismay), results are surprisingly not very much different !
-Optimal IM is found to be just a little bit higher.
-
-My safest bet, for the user who want to optimize its long run efficiency, is to target a retention rate around 80%.
-This would represent large efficiency gain over classical SM2 and still be conservative enough to avoid the problem #3.
-I am inline with Wosniak approach :
-"As you perhaps know, SuperMemo disallows of the forgetting index above 20%. This comes from the fact that you should aim at achieving high speed of learning combined with high retention of the learned material. Setting the forgetting index above 20% would be like giving up SuperMemo altogether and coming back to remembering only that what is easy to remember. In highly interlinked material where new knowledge depends on the previously acquired knowledge, high forgetting rate can even be more harmful.
-Nevertheless, if you want to maximize the speed of learning with little control over what actually stays in your memory, set the forgetting index to 20%"
 
 # Behind the hood
 
@@ -96,6 +78,23 @@ The code here is not perfect, you may be put off by the big-fat-loop of the simu
 
 Every simulation has an end. In the context of spaced repetition, choosing the end has consequences.
 Let say I put a static limit at 200 days. On the opposite, if the card is planed just before, we have just the opposite effect. I identified two ways to counteract this limit. If the card is reviewed just before the 200 days cutoff, the simulation got more workload for not a big increase in retention. After many trial and errors (see footnote 2). I opted in for a random cutoff following an exponential distribution pararametrized so that the average length of a simulation is one year.
+
+
+## Against the U shaped workload
+
+This is not really a U, but you get the idea.
+With a thousand feets view, this result is weird. As a user, you should always be able to trade workload against overall retention.
+Is it the side-effect of an algorithm (too) harsh on failed cards ? From another angle, reseting cards is fairly counter-intuitive from a cognitive perspective. This goes a bit against the idea that storage strengh has been improved over time. 
+
+So, what if failed cards do not deserve a full reset? I am not the first personn to suggest that of course.
+Another simulation is provided with an alternative model where failed cards are less severly punished. A failed card deserve one more review during the same day, and the next interval is a fraction of the previous own (lapse on fail cards). I tried several things (stable interval, divide the interval by two) but that was not harsh enough and very large intervals were suggested by the system. I realized that if the dividing factor was not raising with the current factor, the simulation find "optimizations" for really large factors. I tried to divide by the factor itself (equivalent to go 1 interval back), but the U pattern came back. Finally I went to divide by sqrt(factor) and got a nice shaped curves. This could also be interpreted as "half a step back" since steps have a geometric progression.
+
+Results on optimized IM are not very much different with this new algorithm.
+Optimal IMs are found to be higher than the original study compared to SM2 (also with this new policy on failed cards):
+- optimized IM at 230% for success rate for 70% difficulty -8pt retention, -25% workload.
+- optimized IM at 370% for success rate for 90% difficulty -7pt retention, -40% workload.
+- optimized IM at 580% for success rate for 95% difficulty -6pt retention, -48% workload.
+The shape of the workload happens to be fixed. An user is still able to trade workload against retention (but at an higher and higher cost once he passed through the optimized IM). I don't think the niceness of the curves are a strong argument in favor of this memory model and strategy. This would be much better to have empirical data on this subject.
 
 
 ## Footnotes
