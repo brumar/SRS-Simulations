@@ -14,6 +14,9 @@ Track the workload and retention rate related to a single card in the spaced rep
 Examples :
 
 `python3.7 workload_simulation.py --run --nsimsbyfactor 100 --difficulty 0.90 --output data.pkl`
+
+or, to test for a range of difficulty :
+
 `python3.7 workload_simulation.py --runopti --nsimsbyfactor 100 --outputdir ./output`
 
 
