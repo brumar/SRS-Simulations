@@ -25,9 +25,6 @@ or, to print in the console the result of a simulation:
 
 `data.pkl` is the filename you chooe where the results of the simulation will be stored. You can load safely this kind of file only in your own environment.
 
-## Not run, just analyse the pkl file to gain time
-`python workload_simulation.py --input data.pkl`.
-
 You can also use Python notebooks.
 
 
