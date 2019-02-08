@@ -10,7 +10,7 @@ This relation is often used by Anki users to adjust their retention rate.
 
 The relation between the quantity of work and these two variables is less clear. One can be tempted to try large IM's in order to have less work, but as failed cards got an (almost) hard reset, this strategy may or may not backfire by asking the user even more work.
 
-Efficiency is a concept that has its importance in this context. As a user who has not a limited set of cards to learn, I may want to optimize my ratio overall retention rate/work. If I spend less time reviewing, I can spend more on learning new things. Work is counted only as the number of reviews, while knowledge is the product on how many cards I have in the system to how much I know them. I consider that having 10 cards known with an overall retention of 60% worth 30 cards with an overall retention of 20%.
+Efficiency is a concept that has its importance in this context. A user who has not a limited set of cards to learn may want to optimize his ratio overall retention rate/work. If he spends less time reviewing, he can spend more on learning new things. 
 
 Are there optimal Interval Modifiers that optimize Efficiency?
 
@@ -24,7 +24,7 @@ Are there optimal Interval Modifiers that optimize Efficiency?
 
 **Efficiency** : Overall Retention rate / Workload
 
-**factor** : The constant responsible for the spacing (Interval2 = factor * Interval1). Supposed to be constant during a single simulation.
+**Factor** : The constant responsible for the spacing (Interval2 = factor * Interval1). Supposed to be constant during a single simulation.
 
 **IM** : Interval Modifier. The ratio between two factors. By default, this relates to SM2 default factor(2.5). IM = newfactor/2.5
 
@@ -34,9 +34,11 @@ Are there optimal Interval Modifiers that optimize Efficiency?
 
 ## Key results
 
+First of all, this is important to know that these results are valid under a set of assumptions. The main one being that the SM2 memory model is right.
+
 Under default parameters :
 
-- SM2 is pretty inefficient. According to its own theory, it clearly values quality over efficiency (see footnote).
+- SM2 is pretty inefficient. According to its own model, it clearly values quality over efficiency (see footnote).
 - Optimal IM are very sensitive to the user default retention rate. Still, an IM of 140% has always a better efficiency than the default algorithm. If you have a success rate larger than 80%, it can be raised as follow (a more complete plot is provided):
 - 70% success -> IM 140%, -5pt retention, -18% workload
 - For the "default" 90% success rate, optimized IM is suggested at 270%. Compared to the default IM, it costs -5pts in overall retention traded against 33% less work.
@@ -54,8 +56,9 @@ Few plots:
 - [retention for 85% success rate](./images/85_ret.png)  
 - [efficiency for 85% success rate](./images/85_ef.png)
 
-The most useful one :
+The most useful ones :
 - [optimized factors Vs success rate](./images/all.png)
+- [retention loss and workload fraction after optimization compared to SM2](./images/all_comparedSM2.png)
 
 ## Behind the hood
 
@@ -75,10 +78,9 @@ As the success rate of the user has a large impact on the result of the simulati
 
 ### Assumptions and simplifications
 
-
 SM2 algorithm schedule cards so that they are at X% chance to be succeeded (X depends on the user and his cards so this is a parameter of the model) 
 Failed cards are reviewed ASAP then the day after. After that, they retrieve their normal flow.
-The first steps are : 1day, factor days, factor*factor ...etc...
+The first steps are : 1day, factor days, factor * factor ...etc...
 If the interval is a float, its rounded so that it's a number of days
 No grading (easy, good etc..). The multiplicative factor stay constant (like only good/fail).
 No randomness was added in the dates related to the scheduling or the reviewing of the cards.
