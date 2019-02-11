@@ -260,9 +260,9 @@ if __name__ == "__main__":
         else:
             raise ValueError("you need to specify output directory (--outputdir)")
         list_of_factors = generate_list_of_factors()
-        step = 0.5
+        step = 1
         end = 98
-        success_rate = 69.5
+        success_rate = 65
         while success_rate <= end:
             success_rate += step
             difficulty = success_rate/100
