@@ -73,7 +73,7 @@ Hyperparameters :
 ![workload ratio and retention cost](./images/all_compare_ret_load_30y_0c.png)
 ![optimal factors](./images/all_factors_30y_0c.png)
 
-Optimal IMs and their outcomes are very sensitive to the user default success rate. Interestingly enough SM2 is closed to the optimal choice for cards that have an initial success rate below 75%. 
+Optimal IMs and their outcomes are very sensitive to the user default success rate. Interestingly enough SM2 (black line on the optimal factors plot) is closed to the optimal choice for cards that have an initial success rate below 75%. 
 
 
 #### 70% success rate
@@ -124,7 +124,7 @@ Max Eff
   VS SM2   | 1.80 | -0.07 | -0.03 | 0.71 | 1.36
 ```
 
-#### 95%
+#### 95% success rate
 
 - For a 95% success rate, the optimized IM at 300%. It also cost -3 points in retention for a workload decreased by 42%.
 
@@ -186,16 +186,24 @@ When the life expectancy is higher (30 years), the extra workload tends to be av
 ```
 
 
+### Summary
+
+Here is how the curve optimal factors VS success rate change its shape depending on the new parameters introduced.
+
+From left to right and up to bottom : {30y, no cost}, {30y, 8 cost}, {1y, no cost}, {1y, 8 cost}
+
+![30y cost 0](./images/all_factors_30y_0c.png)
+![30y, cost 8](./images/all_factors_30y_8c.png)
+![1y, cost 0](./images/all_factors_1y_0c.png)
+![1y cost 8](./images/all_factors_1y_8c.png)
+
+
+
 ## How to use this work to optimize your IM with your parameters
 
 You may want to pick your new IM with the following parameters : card life expectancy, success rate, new card cost. Sadly, I have not plug&play way to give you something easy to use.
 
-At the current state of this repository you can only rely on the previously presented data and these four curves to guide your choice of IM :
-
-- [30y cost 0](./images/all_factors_30y_0c.png)
-- [30y, cost 8](./images/all_factors_30y_8c.png)
-- [1y, cost 0](./images/all_factors_1y_0c.png)
-- [1y cost 8](./images/all_factors_1y_8c.png)
+At the current state of this repository you can only rely on the previously presented data and these four last curves to guide your choice of IM.
 
 On the jupyter notebook (analysis.ipynb), you have nice widgets allowing you to set your parameters and get your curves and numerical results. But that would require you to install python3.7, jupyter and ipywidgets. There is also a potential problem with the datafiles produced by the simulation which are not really made to be shared accross multiple environnement. So you may have to run the simulation yourself if that does not work.
 
@@ -278,13 +286,14 @@ The code here is not at production level, there is no tests (shame on me) and yo
 
 You may try a to simulate a new model or correct mine or adding parameters or whatever. For some reasons, I am not a good maintainer, so I probably won't be very active on the github repository. But the least I can do is linking to your fork in the README.md
 
-Few ideas :
+Few ideas (to myself and others) :
 
 - Trying other forgetting curves such as the power law.
 - Adding a success rate dependent workload as described earlier?
 - Fit the curves (I played with polynomial fits which did not work well). Good fits could open up the possibilities of a light interface to allow user pick an IM.
 - Making the jupyter notebook more accessible (docker?, documentation?, online version?). These nice widgets of jupyter should be available for everyone.
-- Correct my english.
+- Correct my english. Make the whole thing more understandable.
+- More plots, especially on the "summary" section.
 - Caching the results of functions in forgetting_curve.py that are among the responsible for the slowness of the simulations (like with lru_cache).
 - Try to model grading buttons (good, easy ...), but I have no idea how.
 - Replace pickle files by csv's (for more sharability of the results)
