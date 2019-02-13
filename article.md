@@ -24,7 +24,7 @@ In the rest of the article, I won't always restate that we are in the context of
 
 **Success Rate** : Probability of answering "yes" at card. Supposed to be constant during a single simulation. This is often called retention rate, but I reserve this term to another meaning.
 
-**Retention Rate** : Average success rate if the user was tested at **any random moment** during the simulation. This is a better index than Success rate.
+**Retention Rate** : Average success rate if the user was tested at **any random moment** during the simulation. This metric has several advantages over success rate, the main one being that this is more related to real life outcomes.
 
 **Efficiency** : Retention Rate / Workload
 
@@ -39,44 +39,125 @@ In the rest of the article, I won't always restate that we are in the context of
 
 First of all, this is important to know that these results are valid under a set of assumptions. The main one being that the SM2 memory model is right. I think you should have a look on the section "Assumptions and Simplifications" before changing your IM.
 
-### General remarks
+### General results
 
 - **Except for cards with low success rate, SM2 efficiency can be significantly improved**.
 
-- When increasing IM, Workload has an U shape while retention is (almost) a straight line. This means that very large IMs can provides both more work AND less retention than optimal IMs. Increasing IM can provide much improvement in terms of efficiency, but that should not be done recklessly.
+- All the improvements are done with an increasing of >100% IM with the strategy of reducing workload at the cost of retention. Whatever the initial success rate or other parameters. Retention loss is almost always bounded from 0 to 6pt and workload reduction have a much large range from -5% to -55%. 
 
-- The efficiency optimum is very close to provide the same amount of work than the factor given by this optimum (i.e the factor where you have to review your card the least possible).
+- Applying a less than 100% IM to target a higher retention rate comes with a very high cost for the workload, and low gain on retention. Accross all parameter space, not a single point have been found where setting IM below 100% was a good choice compared to SM2.
+
+- The value of optimized IM's depends on various factors like the cost of new card, lenght of the simulation but the most important one (to a large extent) is the initial success rate.
+
+- The larger the success rate, the larger the IM and the larger the efficiency improvement gained after optimization.
+
+- When increasing IM, Workload has an U shape while retention is (almost) a straight line. This means that very large IMs can provide both more work AND less retention than optimal IMs. Increasing IM can provide much improvement in terms of efficiency, but that should not be done recklessly.
+
+- In contrast to the previous point, from the angle of efficiency, it's more damaging to set a lower IM than an higher IM, even for these absurds points where both retention and workload are higher. The reason for that is that the UE shape of workload is quite asymetric, it decreases fast until the optimal point then increase at moderate rate (cf some of the following plots).
+
+- The efficiency optimum is very close to also provide the least amount of work possible.
+
 
 ### On premade decks (cost of new card is considered to be 0)
+
+
+### Global Patterns
 
 Hyperparameters :
 
 - Decks are premade (no cost to entering a new card in the system).
 - Average length of simulation (deletion of card by the user) : 30 years.
 
-Optimal IMs are very sensitive to the user default success rate. For close to lifelong cards, SM2 is closed to the optimized choice for cards that have an initial success rate below 75%. Yet a small IM of 130% can grant better effeciciency. But the efficiency gain is small : around +1.5% of efficiency (trading 12% of workload against 2.5pt loss of retention rate).
+![efficiency gain](./images/all_compare_eff_30y_0c.png)
+![workload ratio and retention cost](./images/all_compare_eff_30y_0c.png)
+![optimal factors](all_factors_30y_0c.png)
+
+Optimal IMs and their outcomes are very sensitive to the user default success rate. Interestingly enough SM2 is closed to the optimal choice for cards that have an initial success rate below 75%. 
+
+
+### Zoom on specific success rates
+
+#### 70%
+
+Even for low success rates, a small IM of 130% can grant better efficiency. Note that in this case, the efficiency gain is small : around +1.5% of efficiency (trading 12% of workload against 2.5pt loss of retention rate).
+
+![efficiency accross different factors](./images/70_eff_30y_0c.png)
+![load accross different factors](./images/70_load_30y_0c.png)
+![retention accross different factors](./images/70_ret_30y_0c.png)
+
+With this result and with these curves in mind. It would be quite ill-advised to set an IM targeting higher success rates. For this specific example, setting an IM that would promise a success rate of 81% coming from a current success rate at 70% would have **large detrimental effect on the workload** (+273%) and efficiency (-61%). 
+
+```
+           |factor| pbt  | ret  | load  | effi
+   SM2     | 2.50 | 0.70 | 0.86 | 94.37 | 0.01
+---
+User Defined Factor
+ Absolute  | 1.50 | 0.81 | 0.90 | 257.18 | 0.00
+  VS SM2   | 0.60 | 0.11 | 0.05 | 2.73 | 0.39
+```
+
+The two firsts lines are absolute values, and the last one compare these values such as :
+
+- pbt: success rate difference
+- ret: retention rate difference
+- load: workload improvement workload_new/workload_before
+- effi : efficiency improvement (eff_new/eff_before)
+
+On this plot the green line does not represent the optimized IM, but IM=0.6.
+
+![workload for low IM](./images/70_load_30y_0c_compare_custom.png)
+
+#### 90%
 
 The picture is quite different for cards with larger success rates :
 
 - For the "default" 90% success rate. the optimized IM is at 180%. At the cost of -3 points in retention, workload is decreased by 29%.
+
+![efficiency accross different factors](./images/90_eff_30y_0c.png)
+![load accross different factors](./images/90_load_30y_0c.png)
+![retention accross different factors](./images/90_ret_30y_0c.png)
+
+```
+           |factor| pbt  | ret  | load  | effi
+   SM2     | 2.50 | 0.90 | 0.96 | 19.12 | 0.05
+---
+Max Eff
+ Absolute  | 4.50 | 0.83  | 0.93  | 13.64| 0.07
+  VS SM2   | 1.80 | -0.07 | -0.03 | 0.71 | 1.36
+```
+
+#### 95%
+
 - For a 95% success rate, the optimized IM at 300%. It also cost -3 points in retention for a workload decreased by 42%.
 
+![efficiency accross different factors](./images/95_eff_30y_0c.png)
+![load accross different factors](./images/95_load_30y_0c.png)
+![retention accross different factors](./images/95_ret_30y_0c.png)
 
-### Under more conservative parameters
+```
+           |factor| pbt  | ret  | load  | effi
+   SM2     | 2.50 | 0.95 | 0.98 | 13.72 | 0.07
+---
+Max Eff
+ Absolute  | 7.67 | 0.85 | 0.95 | 7.99 | 0.12
+  VS SM2   | 3.07 | -0.10 | -0.03 | 0.58 | 1.66
+```
+
+### Under different parameters
+
+While the shape of the previous curves stay basically the same, different parameters can have a certain impact on the final results.
 
 Let's say that cards have now a life expectancy of one year. Optimized IM tends to be larger and provide even better efficiency gain compared to SM2.
 
 We have these results :
 
+```
     |  IM  | pbt   | ret   | load | effi
 70% | 1.52 | -0.12 | -0.06 | 0.82 | 1.14
 90% | 2.68 | -0.15 | -0.05 | 0.66 | 1.43
 95% | 4.36 | -0.15 | -0.05 | 0.56 | 1.70
+```
 
-pbt: success rate difference
-ret: retention rate difference
-load: ratio workload_new/workload_before
-effi : efficiency improvement (eff_new/eff_before)
 
 ### Self Made Cards
 
@@ -84,39 +165,41 @@ All the previous results only hold for pre-made decks. This has entered the simu
 
 Unsurprisingly, considering a cost of card creation reduce efficiency gains, especially for cards with low life expectancy. But does it change the value of optimized IM ?
 
-Results for newcardcost = 8 reviews
+Results for newcardcost = 8 reviews, and length simulation = 1 year
 
+```
     |  IM  | pbt   | ret   | load | effi
 70% | 1.16 | -0.04 | -0.02 | 0.90 | 1.08
 90% | 2.10 | -0.10 | -0.03 | 0.83 | 1.16
 95% | 3.68 | -0.12 | -0.04 | 0.79 | 1.21
+```
 
-Optimized IM are lower, as there is less incentive to take risk on reducing workload.
+Optimized IM are lower, as there is less incentive to take risk on reducing the workload.
 
-When the life expectancy is higher (30 years), the extra workload tends to disappear and results are very close the first results presented.
+When the life expectancy is higher (30 years), the extra workload tends to be averaged away. The results are very close the first results presented.
 
+```
     |  IM  | pbt   | ret   | load | effi
 70% | 1.30 | -0.07 | -0.03 | 0.88 | 1.09
 90% | 1.80 | -0.07 | -0.03 | 0.80 | 1.22
 95% | 3.07 | -0.10 | -0.03 | 0.74 | 1.32
-
-Few plots:
-
-- [workload for 70% success rate](./images/70_l.png)  
-- [retention for 70% success rate](./images/70_ret.png)  
-- [efficiency for 70% success_rate](./images/70_ef.png)  
-- [workload for 85% success rate](./images/85_l.png)  
-- [retention for 85% success rate](./images/85_ret.png)  
-- [efficiency for 85% success rate](./images/85_ef.png)
-
-The most useful ones :
-- [optimized factors Vs success rate](./images/all.png)
-- [retention loss and workload fraction after optimization compared to SM2](./images/all_comparedSM2.png)
+```
 
 
 ### Optimize with your parameters
 
-You may want to pick your new IM with the following parameters : card life expectancy, success rate, new card cost.
+You may want to pick your new IM with the following parameters : card life expectancy, success rate, new card cost. At the current state of this repository you can only rely on the previously presented data and these four curves to guide your choice of IM :
+
+- [30y cost 0] (./images/all_compare_eff_30y_0c.png)
+- [30y, cost 8](./images/all_compare_eff_30y_8c.png)
+- [1y, cost 0](./images/all_compare_eff_1y_0c.png)
+- [1y cost 8](./images/all_compare_eff_1y_8c.png)
+
+On the jupyter notebook you have nice widgets allowing you to set your parameters and get your curves and numerical results. But that would require you to install python3.7, jupyter and ipywidgets. There is also a potential problem with the datafiles produced by the simulation which are not really made to be shared accross multiple environnement. So you may have to run the simulation yourself if that does not work.
+
+You can also send me your parameters via MP : success rate, card life expectancy (1y, 5y or 10y), cost of creating a new card and I can send you the results.
+
+The best would be to fit the curves and make them work on a static webpage to reproduce the effects of widgets without having to load simulation data.
 
 ## Behind the hood
 
@@ -157,7 +240,10 @@ Motivation is not taken into account. This is a question that has no absolute an
 
 Optimization have been empirically found by taking the "best point". A more robust approach would be to 1/fit the curves 2/takes the best point of the curve.
 
-More efficiency implies more cards, if your cards are somehow linked together, it could strengthen them more and compensate for the retention loss. Or pessimistically, it could bring more interferences and accelerate forgetness.
+More efficiency implies more cards, if your cards are somehow linked together, it could strengthen them more and compensate for the retention loss. Or if you prefer being pessimistic, it could bring more interferences and accelerate forgetness.
+
+The current success rate given by the user is exact and is the same for all the cards of the targeted deck. Optimized IM could be a bit different for a deck composed with 10 cards with a 70% success rate + 10 cards with a 90% success rate compared to a deck with 20cards with 80% success rate. That would be the case if optimized IMs was a linear function of success rate, but results show a **very** different picture. Check the contribute part if you want to have ideas on how to solve this problem.
+
 
 ### The problem of the cutoff
 
@@ -195,16 +281,17 @@ Few ideas :
 - Trying other forgetting curves such as the power law.
 - Adding a success rate dependent workload as described earlier?
 - Fit the curves (I played with polynomial fits which did not work well). Good fits could open up the possibilities of a light interface to allow user pick an IM.
-- Making the jupyter notebook more accessible (docker?, documentation?, online version?).
+- Making the jupyter notebook more accessible (docker?, documentation?, online version?). These nice widgets of jupyter should be available for everyone.
 - Correct my english.
-- Caching the results of functions in forgetting_curve.py that are responsible for the slowness of the simulations (like with lru_cache).
+- Caching the results of functions in forgetting_curve.py that are among the responsible for the slowness of the simulations (like with lru_cache).
 - Try to model grading buttons (good, easy ...), but I have no idea how.
-- Replace pickle files by csv's (for more portability)
+- Replace pickle files by csv's (for more sharability of the results)
+- Kernel Smoothing on curves to account for the variance in success rate (cf point in limits & assumptions). With gaussian smoothing, you acknowledge that success rate is not a constant, but follow a distribution around your estimated success rate. That can represent either your uncertainty on the real success rate or the fact that a deck is composed of cards with different success rate normally distributed around your estimate. As the cost in efficiency is larger for lower IM than for lower IM, I believe that kernel smoothing would point in the direction of even larger optimized IM's. It would also predict less gain in efficiency.
 
 
-## Footnotes
+## Some notes
 
-1. This result is not new and noted in Piotr Wosniak websites. However he thought that optimization could be done by setting an "efficient" forgetting index. This simulation shows that optimal factors depends largely on the current forgetting index of the user. And that optimized IM are associated with new F.I that vary much (between .90 and .58).
+1. The fact that SM2 efficiency can be improved is not new and noted in Piotr Wosniak websites. However he thought that optimization could be done by setting an "efficient" forgetting index. This simulation shows that optimal factors depends largely on the current forgetting index of the user. And that optimized IM are associated with new F.I that vary much (between .90 and .58).
 
 https://www.supermemo.com/help/fi.htm
 "It is difficult to determine exactly what forgetting index brings the highest acquisition rate.
@@ -224,9 +311,9 @@ That would have saved me some cpu cycles to solve a polynomial expression than r
 
 Few plots :
 
-- [retention](images/midsmooth_ret.png)
-- [work](images/midsmooth_work.png)
-- [efficiency](images/midsmooth_eff.png)
+- ![retention](./images/midsmooth_ret.png)
+- ![work](./images/midsmooth_work.png)
+- ![efficiency](./images/midsmooth_eff.png)
 
 Note that without a random cutoff the curves were even uglier.
 
