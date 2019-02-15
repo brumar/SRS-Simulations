@@ -15,6 +15,9 @@ from settings import INDEX_DAY_INVESTIGATION, UNIFORM_CUTOFF, int_or_round_float
 
 SimulationResult = namedtuple("SimulationResult", ("pbt", "r_rate", "w_load", "efficiency", "factor"))
 
+memorize = True
+constant = 15
+
 
 def normalize_with_threshold(date_due, effective_interval, ndays):
     """cut an interval if it is longer then the number of days of the simulation"""
@@ -34,7 +37,17 @@ def one_or_zero_if_investigation(nb_days):
         return 0
 
 
-def sim(pb, nsims, onfail, ndays=365, difficulty=settings.difficulty, factor=None):
+def memorize_scheduler(constant, lastinterval):
+    current_interval = 0
+    while True:
+        current_interval += 1
+        factor = current_interval/lastinterval
+        pb_success = fc.get_pb_success_from_interval_modifier(factor, difficulty=0.90)
+        if random.random() < (1 - pb_success)/constant:
+            return current_interval
+
+
+def sim(pb, nsims, onfail, ndays=365, difficulty=settings.difficulty, factor=None, mode="SM2"):
     """simulate N_SIM times, the journey of a single card during N_DAYS, where the algorithm is set up
     such as the probablity of success when a card is shown is pb.
     Extracts two mean statistics : the true retention rate and the number of times the card was presented to the user.
@@ -43,6 +56,9 @@ def sim(pb, nsims, onfail, ndays=365, difficulty=settings.difficulty, factor=Non
     current_pb_success = pb
     if factor is None:
         factor = fc.factor_interv(pb, difficulty)
+    else:
+        if mode == "memorize":
+            constant = factor
     nb_reviews_list = []
     n_sim = 0
     integral_real_retentions = []
@@ -59,7 +75,7 @@ def sim(pb, nsims, onfail, ndays=365, difficulty=settings.difficulty, factor=Non
             ndays_sim = ndays
         integral_real_retention = 0
         if INDEX_DAY_INVESTIGATION == 0:
-            decay = fc.get_decay(settings.difficulty, 1)
+            decay = fc.get_decay(difficulty, 1)
             integral_real_retention += fc.real_retention_rate_by_interval(decay, 0, 1)
         n_sim += 1
         date_due = 1
@@ -70,15 +86,19 @@ def sim(pb, nsims, onfail, ndays=365, difficulty=settings.difficulty, factor=Non
         while nb_days < ndays_sim:
             nb_days += 1
             if nb_days == 1:
-                current_pb_success = settings.difficulty
+                current_pb_success = difficulty
             if nb_days == date_due:
                 number_of_review += one_or_zero_if_investigation(nb_days)
                 success = random.random() < current_pb_success
                 if success:
-                    # the real maths used to schedule used latent_interv, because the effective interval have some constraints
+                    # the real maths used to schedule used latent_interv,
+                    # because the effective interval have some constraints
                     # such as be at least 1 and be a round number, which results in a loss of precision
-                    exact_theoretical_interv = (current_interv * factor)
-                    effective_interval = int_or_round_floating_itv(max(exact_theoretical_interv, 1))
+                    if mode == "memorize":
+                        effective_interval = memorize_scheduler(constant, current_interv)
+                    else:
+                        exact_theoretical_interv = (current_interv * factor)
+                        effective_interval = int_or_round_floating_itv(max(exact_theoretical_interv, 1))
                     date_due = date_due + effective_interval
                     interval_thresholded = normalize_with_threshold(date_due, effective_interval, ndays=ndays_sim)
                     current_pb_success = fc.get_current_pb_success(current_interv, interval_thresholded, difficulty)
@@ -89,13 +109,13 @@ def sim(pb, nsims, onfail, ndays=365, difficulty=settings.difficulty, factor=Non
                     if onfail == "reset":
                         effective_interval = 1
                         date_due = date_due + 1
-                        current_pb_success = settings.difficulty
+                        current_pb_success = difficulty
                         interval_thresholded = normalize_with_threshold(date_due, effective_interval, ndays=ndays_sim)
                     elif onfail == "stable":
                         effective_interval = int_or_round_floating_itv(max(current_interv/math.sqrt(factor), 1))
                         date_due = date_due + effective_interval
                         interval_thresholded = normalize_with_threshold(date_due, current_interv, ndays=ndays_sim)
-                        current_pb_success = settings.difficulty
+                        current_pb_success = difficulty
                     else:
                         raise Exception("unknown onfail value")
                         
@@ -188,11 +208,11 @@ def generate_list_of_factors():
     return [i / 120 for i in range(3 * 60, 10 * 200) if (i % 30 == 0) or (i % 40 == 0) or (i % 12 == 0)]
 
 
-def build_sim(nsimsbyfactor, onfail, ndays, difficulty, factor):
-    pbt = fc.get_pb_success_from_interval_modifier(factor / 2.5, difficulty)
-    l = sim(pbt, nsims=nsimsbyfactor, onfail=onfail, ndays=ndays, difficulty=difficulty, factor=factor)
+def build_sim(nsimsbyfactor, onfail, ndays, difficulty, param, mode="SM2"):
+    pbt = fc.get_pb_success_from_interval_modifier(param / 2.5, difficulty)
+    l = sim(pbt, nsims=nsimsbyfactor, onfail=onfail, ndays=ndays, difficulty=difficulty, factor=param, mode=mode)
     quotient = l[0] / l[1]
-    return SimulationResult(pbt, l[0], l[1], quotient, factor)
+    return SimulationResult(pbt, l[0], l[1], quotient, param)
 
 
 def analyse(input):
@@ -238,6 +258,7 @@ if __name__ == "__main__":
     my_parser = argparse.ArgumentParser(description="run or analyse simulation of spaced repetition algorithm")
     my_parser.add_argument("--run", action="store_true")
     my_parser.add_argument("--runopti", action="store_true")
+    my_parser.add_argument("--runoptimemorize", action="store_true")
     my_parser.add_argument("--analyse", action="store_true")
     my_parser.add_argument("--input", nargs="?", type=str)
     my_parser.add_argument("--onfail", nargs="?", type=str, default="reset")
@@ -253,7 +274,29 @@ if __name__ == "__main__":
     onfail = args.onfail
     ndays = args.ndays
     verbose = args.verbose
-    
+
+    if args.runoptimemorize:
+        if args.outputdir:
+            os.mkdir(args.outputdir)
+        else:
+            raise ValueError("you need to specify output directory (--outputdir)")
+        list_of_q = range(1, 30, 2)
+        step = 1
+        end = 98
+        success_rate = 65
+        while success_rate <= end:
+            success_rate += step
+            difficulty = success_rate/100
+            total_output = []
+            for q in list_of_q:
+                total_output.append(build_sim(nsimsbyfactor, onfail, ndays, difficulty, q, mode="memorize"))
+            if verbose:
+                best_productivity = max(total_output, key=itemgetter(3))
+                print(success_rate, *best_productivity)
+            with open(args.outputdir+"/"+str(success_rate)+".pkl", "wb") as picklefile:
+                pickle.dump(total_output, picklefile)
+        exit(0)
+        
     if args.runopti:
         if args.outputdir:
             os.mkdir(args.outputdir)
