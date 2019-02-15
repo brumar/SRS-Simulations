@@ -289,6 +289,7 @@ You may try a to simulate a new model or correct mine or adding parameters or wh
 Few ideas (to myself and others) :
 
 - Trying other forgetting curves such as the power law.
+- Compare the method and the results with https://pheartheceal.github.io/anki-optimizer/
 - Adding a success rate dependent workload as described earlier?
 - Fit the curves (I played with polynomial fits which did not work well). Good fits could open up the possibilities of a light interface to allow user pick an IM.
 - Making the jupyter notebook more accessible (docker?, documentation?, online version?). These nice widgets of jupyter should be available for everyone.
@@ -298,6 +299,7 @@ Few ideas (to myself and others) :
 - Try to model grading buttons (good, easy ...), but I have no idea how.
 - Replace pickle files by csv's (for more sharability of the results)
 - Kernel Smoothing on curves to account for the variance in success rate (cf point in limits & assumptions). With gaussian smoothing, you acknowledge that success rate is not a constant, but follow a distribution around your estimated success rate. That can represent either your uncertainty on the real success rate or the fact that a deck is composed of cards with different success rate normally distributed around your estimate. As the cost in efficiency is larger for lower IM than for lower IM, I believe that kernel smoothing would point in the direction of even larger optimized IM's. It would also predict less gain in efficiency.
+- Test alternative scheduling strategies (than wait for fixed threshold)
 
 
 ## Some notes
